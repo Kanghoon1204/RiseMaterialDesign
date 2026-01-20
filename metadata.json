@@ -1,0 +1,5 @@
+{
+  "name": "Material Design 3 Components Clone",
+  "description": "A fully functional replica of the Material Design 3 (M3) components website, built with React, TypeScript, and Tailwind CSS. This application showcases a sophisticated UI/UX, including a themeable (light/dark) interface, responsive layout, and detailed component documentation pages, all styled to match the M3 aesthetic.",
+  "requestFramePermissions": []
+}
