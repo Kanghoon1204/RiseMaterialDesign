@@ -2,48 +2,53 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from '../components/icons/ArrowRightIcon';
+import { useLanguage } from '../hooks/useLanguage';
+import { useTranslation } from '../i18n/translations';
 
 const HomePage: React.FC = () => {
+  const { language } = useLanguage();
+  const t = useTranslation(language);
+
   return (
     <div className="container mx-auto max-w-5xl p-8 lg:p-12 text-neutral-800 dark:text-neutral-200">
       <header className="mb-12">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-blue-600 dark:text-blue-400 mb-4">
-          Material Design 3
+          {t.home.title}
         </h1>
         <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-300 max-w-3xl">
-          This is a clone of the Material Design 3 components website, built to showcase a modern frontend stack with React, TypeScript, and Tailwind CSS. Explore the components using the sidebar navigation.
+          {t.home.description}
         </p>
       </header>
-      
+
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-slate-100 dark:bg-neutral-800 p-6 rounded-2xl">
-          <h2 className="text-2xl font-semibold mb-3">Explore Components</h2>
+          <h2 className="text-2xl font-semibold mb-3">{t.home.exploreComponents}</h2>
           <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            Dive into a variety of UI components, each styled to match the M3 aesthetic.
+            {t.home.exploreComponentsDesc}
           </p>
           <Link to="/components/button" className="inline-flex items-center font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-            Go to Buttons <ArrowRightIcon className="ml-2 w-4 h-4" />
+            {t.home.goToButtons} <ArrowRightIcon className="ml-2 w-4 h-4" />
           </Link>
         </div>
-        
+
         <div className="bg-slate-100 dark:bg-neutral-800 p-6 rounded-2xl">
-          <h2 className="text-2xl font-semibold mb-3">Responsive Design</h2>
+          <h2 className="text-2xl font-semibold mb-3">{t.home.responsiveDesign}</h2>
           <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            The layout is fully responsive, adapting seamlessly from mobile to desktop screens.
+            {t.home.responsiveDesignDesc}
           </p>
         </div>
-        
+
         <div className="bg-slate-100 dark:bg-neutral-800 p-6 rounded-2xl">
-          <h2 className="text-2xl font-semibold mb-3">Light & Dark Modes</h2>
+          <h2 className="text-2xl font-semibold mb-3">{t.home.lightDarkModes}</h2>
           <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            Toggle between light and dark themes using the icon in the top bar.
+            {t.home.lightDarkModesDesc}
           </p>
         </div>
-        
+
         <div className="bg-slate-100 dark:bg-neutral-800 p-6 rounded-2xl">
-          <h2 className="text-2xl font-semibold mb-3">Built with Tailwind</h2>
+          <h2 className="text-2xl font-semibold mb-3">{t.home.builtWithTailwind}</h2>
           <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            All styles are implemented using Tailwind CSS for a utility-first and maintainable codebase.
+            {t.home.builtWithTailwindDesc}
           </p>
         </div>
       </section>

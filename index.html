@@ -8,6 +8,12 @@
     <title>Material Design 3 Clone</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Configure Tailwind to use class-based dark mode
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+    <script>
       // Set theme based on localStorage or system preference
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
@@ -15,6 +21,28 @@
         document.documentElement.classList.remove('dark');
       }
     </script>
+    <style>
+      @keyframes progress-indeterminate {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(400%); }
+      }
+      @keyframes slide-up {
+        0% { transform: translate(-50%, 100%); opacity: 0; }
+        100% { transform: translate(-50%, 0); opacity: 1; }
+      }
+      @keyframes scale-in {
+        0% { transform: scale(0.9); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes fade-in {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+      @keyframes slide-right {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(0); }
+      }
+    </style>
   <script type="importmap">
 {
   "imports": {

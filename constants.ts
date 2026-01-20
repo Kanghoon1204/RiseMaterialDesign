@@ -1,59 +1,67 @@
 
-import type { NavCategory } from './types';
+export interface NavItem {
+  key: string;
+  path: string;
+}
+
+export interface NavCategory {
+  key: string;
+  items: NavItem[];
+}
 
 export const NAV_DATA: NavCategory[] = [
   {
-    name: 'Action',
+    key: 'action',
     items: [
-      { name: 'Button', path: '/components/button' },
-      { name: 'Floating action button', path: '/components/fab' },
-      { name: 'Icon button', path: '/components/icon-button' },
-      { name: 'Segmented buttons', path: '/components/segmented-buttons' },
+      { key: 'button', path: '/components/button' },
+      { key: 'fab', path: '/components/fab' },
+      { key: 'iconButton', path: '/components/icon-button' },
+      { key: 'segmentedButtons', path: '/components/segmented-buttons' },
     ],
   },
   {
-    name: 'Communication',
+    key: 'communication',
     items: [
-      { name: 'Badge', path: '/components/badge' },
-      { name: 'Progress indicators', path: '/components/progress-indicators' },
-      { name: 'Snackbar', path: '/components/snackbar' },
+      { key: 'badge', path: '/components/badge' },
+      { key: 'progressIndicators', path: '/components/progress-indicators' },
+      { key: 'snackbar', path: '/components/snackbar' },
     ],
   },
   {
-    name: 'Containment',
+    key: 'containment',
     items: [
-      { name: 'Card', path: '/components/card' },
-      { name: 'Dialog', path: '/components/dialog' },
-      { name: 'Sheets: bottom', path: '/components/sheets-bottom' },
-      { name: 'Tooltip', path: '/components/tooltip' },
+      { key: 'card', path: '/components/card' },
+      { key: 'dialog', path: '/components/dialog' },
+      { key: 'sheetsBottom', path: '/components/sheets-bottom' },
+      { key: 'tooltip', path: '/components/tooltip' },
     ],
   },
   {
-    name: 'Navigation',
+    key: 'navigation',
     items: [
-      { name: 'Bottom app bar', path: '/components/bottom-app-bar' },
-      { name: 'Navigation bar', path: '/components/navigation-bar' },
-      { name: 'Navigation drawer', path: '/components/navigation-drawer' },
-      { name: 'Tabs', path: '/components/tabs' },
-      { name: 'Top app bar', path: '/components/top-app-bar' },
+      { key: 'bottomAppBar', path: '/components/bottom-app-bar' },
+      { key: 'navigationBar', path: '/components/navigation-bar' },
+      { key: 'navigationDrawer', path: '/components/navigation-drawer' },
+      { key: 'tabs', path: '/components/tabs' },
+      { key: 'topAppBar', path: '/components/top-app-bar' },
     ],
   },
   {
-    name: 'Selection',
+    key: 'selection',
     items: [
-      { name: 'Checkbox', path: '/components/checkbox' },
-      { name: 'Chips', path: '/components/chips' },
-      { name: 'Date pickers', path: '/components/date-pickers' },
-      { name: 'Menus', path: '/components/menus' },
-      { name: 'Radio button', path: '/components/radio-button' },
-      { name: 'Slider', path: '/components/slider' },
-      { name: 'Switch', path: '/components/switch' },
+      { key: 'checkbox', path: '/components/checkbox' },
+      { key: 'chips', path: '/components/chips' },
+      { key: 'datePickers', path: '/components/date-pickers' },
+      { key: 'menus', path: '/components/menus' },
+      { key: 'radioButton', path: '/components/radio-button' },
+      { key: 'slider', path: '/components/slider' },
+      { key: 'switch', path: '/components/switch' },
     ],
   },
   {
-    name: 'Text inputs',
+    key: 'textInputs',
     items: [
-        { name: 'Text field', path: '/components/text-field' },
+      { key: 'textField', path: '/components/text-field' },
     ],
   },
 ];
