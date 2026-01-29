@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { NAV_DATA } from '../constants';
+import { CODE_SNIPPETS, CodeSnippetItem } from '../constants/codeSnippets';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/translations';
 
@@ -9,6 +10,24 @@ const ComponentPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { language } = useLanguage();
   const t = useTranslation(language);
+
+  // Code language: 'react' or 'flutter'
+  const [codeLanguage, setCodeLanguage] = useState<'react' | 'flutter'>('react');
+  // Scroll to top visibility
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Handle scroll for showing/hiding scroll to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const componentItem = NAV_DATA.flatMap(category => category.items).find(
     item => item.path === `/components/${id}`
@@ -48,30 +67,1911 @@ const ComponentPage: React.FC = () => {
     }
   }
 
+  const usageKey = getUsageKey(id);
+  const usage = usageKey ? t.usage[usageKey as keyof typeof t.usage] : null;
+
+  const sectionLabels = {
+    overview: language === 'ko' ? '개요' : 'Overview',
+    example: language === 'ko' ? '예제' : 'Example',
+    types: language === 'ko' ? '유형' : 'Types',
+    states: language === 'ko' ? '상태' : 'States',
+    anatomy: language === 'ko' ? '구조' : 'Anatomy',
+    specs: language === 'ko' ? '스펙' : 'Specifications',
+    whenToUse: language === 'ko' ? '언제 사용하나요?' : 'When to use',
+    guidelines: language === 'ko' ? '가이드라인' : 'Guidelines',
+    comparison: language === 'ko' ? '유사 컴포넌트와 비교' : 'Related components',
+    details: language === 'ko' ? '상세 설정' : 'Configuration',
+    dos: language === 'ko' ? '권장 사항' : 'Do\'s',
+    donts: language === 'ko' ? '주의 사항' : 'Don\'ts',
+    bestPractices: language === 'ko' ? '모범 사례' : 'Best practices',
+    errorStates: language === 'ko' ? '오류 처리' : 'Error handling',
+    accessibility: language === 'ko' ? '접근성' : 'Accessibility',
+    note: language === 'ko' ? '참고 사항' : 'Note',
+  };
+
+  // Get overview from usage
+  const overviewText = usage && 'overview' in usage ? usage.overview : t.componentPage.placeholder.replace('{name}', componentName);
+
+  // Get adjacent components for prev/next navigation
+  const allComponents = NAV_DATA.flatMap(category => category.items);
+  const currentIndex = allComponents.findIndex(item => item.path === `/components/${id}`);
+  const prevComponent = currentIndex > 0 ? allComponents[currentIndex - 1] : null;
+  const nextComponent = currentIndex < allComponents.length - 1 ? allComponents[currentIndex + 1] : null;
+
+  // Build available sections for TOC
+  const availableSections = [
+    { id: 'overview', label: sectionLabels.overview, always: true },
+    { id: 'example', label: sectionLabels.example, always: true },
+    { id: 'types', label: sectionLabels.types, show: usage && 'types' in usage },
+    { id: 'anatomy', label: sectionLabels.anatomy, show: usage && 'anatomy' in usage },
+    { id: 'specs', label: sectionLabels.specs, show: usage && 'specs' in usage },
+    { id: 'when-to-use', label: sectionLabels.whenToUse, show: usage && 'whenToUse' in usage },
+    { id: 'guidelines', label: sectionLabels.guidelines, show: usage && 'guidelines' in usage },
+    { id: 'dos-donts', label: language === 'ko' ? '권장/주의 사항' : 'Do\'s & Don\'ts', show: usage && ('dos' in usage || 'donts' in usage) },
+    { id: 'accessibility', label: sectionLabels.accessibility, show: usage && 'accessibility' in usage },
+  ].filter(s => s.always || s.show);
+
   return (
     <div className="container mx-auto max-w-5xl p-8 lg:p-12">
-      <div className="mb-8">
-        <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">{t.componentPage.components}</span>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tighter mt-1">{componentName}</h1>
-        <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-300 max-w-3xl">
-          {t.componentPage.placeholder.replace('{name}', componentName)}
-        </p>
-      </div>
-
-      <div className="mt-12">
-        <h2 className="text-2xl font-semibold mb-4">{t.componentPage.example}</h2>
-        <div className="p-8 border border-slate-200 dark:border-neutral-700 rounded-2xl bg-slate-100/50 dark:bg-neutral-800/50">
-          {renderComponentExample()}
+      {/* ==================== HEADER ==================== */}
+      <header className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">{t.componentPage.components}</span>
+          <span className="text-neutral-300 dark:text-neutral-600">/</span>
+          <span className="text-neutral-500 dark:text-neutral-400 text-sm">{componentName}</span>
         </div>
-      </div>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">{componentName}</h1>
+      </header>
 
-      <div className="mt-12 prose prose-lg dark:prose-invert max-w-none prose-p:text-neutral-600 dark:prose-p:text-neutral-300 prose-headings:font-bold">
-        <h2 className="text-2xl font-semibold">{t.componentPage.usage}</h2>
-        <p>{t.componentPage.usageDesc.replace('{name}', componentName)}</p>
-        <p>{t.componentPage.usageExample}</p>
-      </div>
+      {/* ==================== QUICK NAVIGATION (TOC) ==================== */}
+      <nav className="mb-10 p-4 bg-slate-50 dark:bg-neutral-800/50 rounded-xl border border-slate-200 dark:border-neutral-700">
+        <div className="flex items-center gap-2 mb-3">
+          <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+          </svg>
+          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+            {language === 'ko' ? '빠른 탐색' : 'Quick Navigation'}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {availableSections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-lg border border-slate-200 dark:border-neutral-600 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* ==================== 1. OVERVIEW ==================== */}
+      <section id="overview" className="mb-12 scroll-mt-20">
+        <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.overview}</h2>
+        <p className="text-lg text-neutral-600 dark:text-neutral-300 leading-relaxed">
+          {overviewText}
+        </p>
+      </section>
+
+      {/* ==================== 2. COMPONENT EXAMPLES (1:1 Preview + Code) ==================== */}
+      <section id="example" className="mb-12 scroll-mt-20">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{sectionLabels.example}</h2>
+          {/* Global Code Language Toggle */}
+          {id && CODE_SNIPPETS[id]?.snippets && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                {language === 'ko' ? '코드 언어:' : 'Code:'}
+              </span>
+              <div className="flex gap-1 bg-slate-100 dark:bg-neutral-700 rounded-lg p-0.5">
+                <button
+                  onClick={() => setCodeLanguage('react')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    codeLanguage === 'react'
+                      ? 'bg-white dark:bg-neutral-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400'
+                  }`}
+                >
+                  React
+                </button>
+                <button
+                  onClick={() => setCodeLanguage('flutter')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    codeLanguage === 'flutter'
+                      ? 'bg-white dark:bg-neutral-600 text-cyan-600 dark:text-cyan-400 shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400'
+                  }`}
+                >
+                  Flutter
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 1:1 Example Cards */}
+        <div className="space-y-4">
+          {id && CODE_SNIPPETS[id]?.snippets ? (
+            CODE_SNIPPETS[id].snippets.map((snippet, index) => (
+              <ExampleWithCode
+                key={index}
+                componentId={id}
+                snippet={snippet}
+                codeLanguage={codeLanguage}
+                language={language}
+                index={index}
+              />
+            ))
+          ) : (
+            <div className="p-8 border border-slate-200 dark:border-neutral-700 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-neutral-800/50 dark:to-neutral-900/50">
+              {renderComponentExample()}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ==================== 3. TYPES / STATES ==================== */}
+      {usage && (('types' in usage && typeof usage.types === 'object') || ('states' in usage && typeof usage.states === 'object')) && (
+        <section id="types" className="mb-12 scroll-mt-20">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">
+            {'types' in usage ? sectionLabels.types : sectionLabels.states}
+          </h2>
+          <div className="grid gap-3">
+            {Object.entries(('types' in usage ? usage.types : usage.states) as Record<string, string>).map(([key, value]) => (
+              <div key={key} className="p-4 bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 min-w-[140px] capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                  <span className="text-neutral-600 dark:text-neutral-300">{value}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 4. STATES (INTERACTION STATES) ==================== */}
+      {usage && 'states' in usage && typeof usage.states === 'object' && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.states}</h2>
+          <div className="grid gap-3">
+            {Object.entries(usage.states as Record<string, string>).map(([key, value]) => (
+              <div key={key} className="p-4 bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                  <span className="font-semibold text-teal-600 dark:text-teal-400 min-w-[140px] capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                  <span className="text-neutral-600 dark:text-neutral-300">{value}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 5. ANATOMY ==================== */}
+      {usage && 'anatomy' in usage && (
+        <section id="anatomy" className="mb-12 scroll-mt-20">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.anatomy}</h2>
+          <div className="p-5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="whitespace-pre-line text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              {usage.anatomy}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 6. SPECIFICATIONS ==================== */}
+      {usage && 'specs' in usage && (
+        <section id="specs" className="mb-12 scroll-mt-20">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.specs}</h2>
+          <div className="p-5 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl border border-cyan-100 dark:border-cyan-800">
+            <div className="whitespace-pre-line text-cyan-800 dark:text-cyan-200 leading-relaxed">
+              {usage.specs}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 7. WHEN TO USE / GUIDELINES ==================== */}
+      {usage && (('usage' in usage) || ('guidelines' in usage)) && (
+        <section id="when-to-use" className="mb-12 scroll-mt-20">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">
+            {'usage' in usage ? sectionLabels.whenToUse : sectionLabels.guidelines}
+          </h2>
+          <div className="p-5 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+            <p className="text-indigo-800 dark:text-indigo-200">
+              {'usage' in usage ? usage.usage : ('guidelines' in usage ? usage.guidelines : '')}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 8. COMPARISON ==================== */}
+      {usage && ('vsSwitch' in usage || 'vsCheckbox' in usage || 'vsBottomNav' in usage) && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.comparison}</h2>
+          <div className="space-y-3">
+            {'vsSwitch' in usage && (
+              <ComparisonCard
+                title={language === 'ko' ? '스위치' : 'Switch'}
+                description={usage.vsSwitch}
+              />
+            )}
+            {'vsCheckbox' in usage && (
+              <ComparisonCard
+                title={language === 'ko' ? '체크박스' : 'Checkbox'}
+                description={usage.vsCheckbox}
+              />
+            )}
+            {'vsBottomNav' in usage && (
+              <ComparisonCard
+                title={language === 'ko' ? '하단 내비게이션' : 'Bottom Navigation'}
+                description={usage.vsBottomNav}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 9. CONFIGURATION / DETAILS ==================== */}
+      {usage && ('toggle' in usage || 'content' in usage || 'duration' in usage || 'actions' in usage || 'placement' in usage || 'mixing' in usage || 'required' in usage) && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.details}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {'placement' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '배치' : 'Placement'}
+                content={usage.placement}
+              />
+            )}
+            {'toggle' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '토글' : 'Toggle'}
+                content={usage.toggle}
+              />
+            )}
+            {'content' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '콘텐츠' : 'Content'}
+                content={usage.content}
+              />
+            )}
+            {'duration' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '표시 시간' : 'Duration'}
+                content={usage.duration as string}
+              />
+            )}
+            {'actions' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '작업 버튼' : 'Actions'}
+                content={usage.actions as string}
+              />
+            )}
+            {'mixing' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '혼합 사용' : 'Mixing Types'}
+                content={usage.mixing as string}
+              />
+            )}
+            {'required' in usage && (
+              <ConfigCard
+                title={language === 'ko' ? '필수 표시' : 'Required Fields'}
+                content={usage.required as string}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 10. BEST PRACTICES ==================== */}
+      {usage && 'bestPractices' in usage && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.bestPractices}</h2>
+          <div className="p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+            <p className="text-green-800 dark:text-green-200 whitespace-pre-line leading-relaxed">{usage.bestPractices}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 11. DO'S AND DON'TS ==================== */}
+      {usage && ('dos' in usage || 'donts' in usage) && (
+        <section id="dos-donts" className="mb-12 scroll-mt-20">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Do's */}
+            {'dos' in usage && (
+              <div className="bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 overflow-hidden">
+                <div className="px-5 py-3 bg-emerald-500 dark:bg-emerald-600">
+                  <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {sectionLabels.dos}
+                  </h2>
+                </div>
+                <ul className="p-4 space-y-3">
+                  {(usage.dos as string).split('\n').filter(line => line.trim()).map((line, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-1.5 h-1.5 mt-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{line.replace(/^[•\-]\s*/, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {/* Don'ts */}
+            {'donts' in usage && (
+              <div className="bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 overflow-hidden">
+                <div className="px-5 py-3 bg-rose-500 dark:bg-rose-600">
+                  <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {sectionLabels.donts}
+                  </h2>
+                </div>
+                <ul className="p-4 space-y-3">
+                  {(usage.donts as string).split('\n').filter(line => line.trim()).map((line, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-1.5 h-1.5 mt-2 rounded-full bg-rose-500 dark:bg-rose-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{line.replace(/^[•\-]\s*/, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 12. ERROR STATES ==================== */}
+      {usage && 'errorStates' in usage && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.errorStates}</h2>
+          <div className="p-5 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800">
+            <p className="text-red-800 dark:text-red-200 whitespace-pre-line leading-relaxed">{usage.errorStates}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 13. ACCESSIBILITY ==================== */}
+      {usage && 'accessibility' in usage && (
+        <section id="accessibility" className="mb-12 scroll-mt-20">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.accessibility}</h2>
+          <div className="p-5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
+            <p className="text-purple-800 dark:text-purple-200 whitespace-pre-line leading-relaxed">{usage.accessibility}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== 14. NOTE ==================== */}
+      {usage && 'note' in usage && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">{sectionLabels.note}</h2>
+          <div className="p-5 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-800">
+            <p className="text-yellow-800 dark:text-yellow-200 whitespace-pre-line leading-relaxed">{usage.note}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ==================== PREV/NEXT NAVIGATION ==================== */}
+      <nav className="mt-16 pt-8 border-t border-slate-200 dark:border-neutral-700">
+        <div className="flex justify-between items-center">
+          {prevComponent ? (
+            <Link
+              to={prevComponent.path}
+              className="group flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+            >
+              <svg className="w-5 h-5 text-neutral-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <div className="text-left">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">{language === 'ko' ? '이전' : 'Previous'}</div>
+                <div className="text-sm font-medium text-neutral-700 dark:text-neutral-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {t.components[prevComponent.key as keyof typeof t.components] || prevComponent.key}
+                </div>
+              </div>
+            </Link>
+          ) : <div />}
+
+          {nextComponent ? (
+            <Link
+              to={nextComponent.path}
+              className="group flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+            >
+              <div className="text-right">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">{language === 'ko' ? '다음' : 'Next'}</div>
+                <div className="text-sm font-medium text-neutral-700 dark:text-neutral-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {t.components[nextComponent.key as keyof typeof t.components] || nextComponent.key}
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-neutral-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          ) : <div />}
+        </div>
+
+        {/* Study Progress Indicator */}
+        <div className="mt-6 text-center">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            {language === 'ko'
+              ? `${currentIndex + 1} / ${allComponents.length} 컴포넌트 학습 중`
+              : `Studying component ${currentIndex + 1} of ${allComponents.length}`
+            }
+          </span>
+          <div className="mt-2 h-1.5 bg-slate-200 dark:bg-neutral-700 rounded-full overflow-hidden max-w-xs mx-auto">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all"
+              style={{ width: `${((currentIndex + 1) / allComponents.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      </nav>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all z-50"
+          aria-label={language === 'ko' ? '맨 위로' : 'Scroll to top'}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      )}
     </div>
   );
+
+  // Comparison card component
+  function ComparisonCard({ title, description }: { title: string; description: string }) {
+    return (
+      <div className="p-4 bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium rounded">
+            vs
+          </span>
+          <span className="font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
+        </div>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">{description}</p>
+      </div>
+    );
+  }
+
+  // Configuration card component
+  function ConfigCard({ title, content }: { title: string; content: string }) {
+    return (
+      <div className="p-4 bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700">
+        <h4 className="font-medium text-neutral-900 dark:text-neutral-100 mb-2">{title}</h4>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">{content}</p>
+      </div>
+    );
+  }
+
+  // Example with Code - 1:1 matching preview and code
+  function ExampleWithCode({ componentId, snippet, codeLanguage: codeLang, language: lang, index }: {
+    key?: React.Key;
+    componentId: string;
+    snippet: CodeSnippetItem;
+    codeLanguage: 'react' | 'flutter';
+    language: string;
+    index: number;
+  }) {
+    const [isCopied, setIsCopied] = React.useState(false);
+    const [showCode, setShowCode] = React.useState(true);
+
+    const handleCopy = () => {
+      const code = codeLang === 'react' ? snippet.react : snippet.flutter;
+      navigator.clipboard.writeText(code);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    const title = lang === 'ko' ? snippet.titleKo : snippet.title;
+    const code = codeLang === 'react' ? snippet.react : snippet.flutter;
+
+    return (
+      <div className="bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 bg-slate-50 dark:bg-neutral-800/80 border-b border-slate-200 dark:border-neutral-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 flex items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold rounded">
+                {index + 1}
+              </span>
+              <h3 className="font-medium text-neutral-800 dark:text-neutral-200">{title}</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowCode(!showCode)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
+                  showCode
+                    ? 'bg-neutral-200 dark:bg-neutral-600 text-neutral-700 dark:text-neutral-200'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                {showCode ? (lang === 'ko' ? '코드 숨기기' : 'Hide Code') : (lang === 'ko' ? '코드 보기' : 'Show Code')}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content: Preview + Code side by side */}
+        <div className={`grid ${showCode ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+          {/* Preview */}
+          <div className="p-6 bg-gradient-to-br from-slate-50 to-white dark:from-neutral-900/30 dark:to-neutral-800/30 flex items-center justify-center min-h-[100px] border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-neutral-700">
+            <ComponentPreview componentId={componentId} variantIndex={index} t={t} language={lang} />
+          </div>
+
+          {/* Code */}
+          {showCode && (
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between px-3 py-2 bg-neutral-800 dark:bg-neutral-900 border-b border-neutral-700">
+                <span className="text-xs text-neutral-400 font-medium">
+                  {codeLang === 'react' ? 'React / JSX' : 'Flutter / Dart'}
+                </span>
+                <button
+                  onClick={handleCopy}
+                  className={`flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded transition-all ${
+                    isCopied
+                      ? 'text-green-400 bg-green-900/30'
+                      : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700'
+                  }`}
+                >
+                  {isCopied ? (
+                    <>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      {lang === 'ko' ? '복사됨' : 'Copied'}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      {lang === 'ko' ? '복사' : 'Copy'}
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="p-4 bg-neutral-900 dark:bg-neutral-950 overflow-x-auto flex-1">
+                <pre className="text-xs text-neutral-100 font-mono leading-relaxed whitespace-pre">{code}</pre>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Component Preview - renders the actual visual for each variant
+  function ComponentPreview({ componentId, variantIndex, t, language: lang }: { componentId: string; variantIndex: number; t: any; language: string }) {
+    // Button variants
+    if (componentId === 'button') {
+      const variants = [
+        <button key="elevated" className="px-6 py-2.5 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200 font-medium text-sm rounded-full shadow-md hover:shadow-lg transition-all">{t.button.elevated}</button>,
+        <button key="filled" className="px-6 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-full hover:bg-blue-700 transition-all">{t.button.filled}</button>,
+        <button key="tonal" className="px-6 py-2.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 font-medium text-sm rounded-full hover:bg-blue-200 transition-all">{t.button.tonal}</button>,
+        <button key="outlined" className="px-6 py-2.5 text-blue-600 dark:text-blue-300 font-medium text-sm rounded-full border border-blue-600 dark:border-blue-400 hover:bg-blue-50 transition-all">{t.button.outlined}</button>,
+        <button key="text" className="px-6 py-2.5 text-blue-600 dark:text-blue-300 font-medium text-sm rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all">{t.button.text}</button>,
+        <button key="icon" className="px-5 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-full hover:bg-blue-700 transition-all flex items-center gap-2"><SendIcon className="w-4 h-4" />{t.button.send}</button>,
+        <button key="disabled" className="px-6 py-2.5 bg-neutral-200 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500 font-medium text-sm rounded-full cursor-not-allowed" disabled>{t.button.disabled}</button>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // FAB variants
+    if (componentId === 'fab') {
+      const variants = [
+        <button key="standard" className="w-14 h-14 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-2xl shadow-lg flex items-center justify-center"><PlusIcon className="w-6 h-6" /></button>,
+        <button key="small" className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-xl shadow-md flex items-center justify-center"><EditIcon className="w-4 h-4" /></button>,
+        <button key="large" className="w-24 h-24 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-[28px] shadow-lg flex items-center justify-center"><PlusIcon className="w-9 h-9" /></button>,
+        <button key="extended" className="px-5 h-14 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-2xl shadow-lg flex items-center gap-3 font-medium"><PlusIcon className="w-5 h-5" />{t.fab.create}</button>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Icon Button variants
+    if (componentId === 'icon-button') {
+      const variants = [
+        <button key="standard" className="p-2.5 text-neutral-600 dark:text-neutral-300 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700"><SettingsIcon className="w-5 h-5" /></button>,
+        <button key="filled" className="p-2.5 bg-blue-600 text-white rounded-full"><HeartIcon className="w-5 h-5" /></button>,
+        <button key="tonal" className="p-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-full"><BookmarkIcon className="w-5 h-5" /></button>,
+        <button key="outlined" className="p-2.5 text-neutral-600 dark:text-neutral-300 rounded-full border border-neutral-300 dark:border-neutral-600"><ShareIcon className="w-5 h-5" /></button>,
+        <button key="toggle" className="p-2.5 bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-300 rounded-full"><HeartIcon className="w-5 h-5" /></button>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Checkbox variants (3 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'checkbox') {
+      const CheckboxPreview = ({ variant }: { variant: number }) => {
+        const [checked, setChecked] = React.useState(false);
+        const [checkedWithLabel, setCheckedWithLabel] = React.useState(false);
+        const [items, setItems] = React.useState([false, false, false]);
+
+        if (variant === 0) {
+          // Basic Checkbox
+          return (
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => setChecked(e.target.checked)}
+                className="w-5 h-5 rounded border-2 border-blue-600 text-blue-600 accent-blue-600 cursor-pointer"
+              />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                {checked ? (t.checkbox?.checked || 'Checked') : (t.checkbox?.unchecked || 'Unchecked')}
+              </span>
+            </label>
+          );
+        }
+
+        if (variant === 1) {
+          // Checkbox with Label
+          return (
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={checkedWithLabel}
+                onChange={(e) => setCheckedWithLabel(e.target.checked)}
+                className="w-5 h-5 rounded border-2 text-blue-600 accent-blue-600 cursor-pointer"
+              />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                {language === 'ko' ? '이용약관에 동의합니다' : 'Accept terms and conditions'}
+              </span>
+            </label>
+          );
+        }
+
+        // Indeterminate Checkbox (variant 2)
+        const allChecked = items.every(Boolean);
+        const someChecked = items.some(Boolean);
+
+        return (
+          <div className="space-y-2">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
+                onChange={() => setItems(allChecked ? [false, false, false] : [true, true, true])}
+                className="w-5 h-5 rounded border-2 text-blue-600 accent-blue-600 cursor-pointer"
+              />
+              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                {language === 'ko' ? '전체 선택' : 'Select All'}
+              </span>
+            </label>
+            <div className="ml-6 space-y-1">
+              {[language === 'ko' ? '옵션 1' : 'Option 1', language === 'ko' ? '옵션 2' : 'Option 2', language === 'ko' ? '옵션 3' : 'Option 3'].map((label, i) => (
+                <label key={i} className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={items[i]}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[i] = e.target.checked;
+                      setItems(newItems);
+                    }}
+                    className="w-4 h-4 rounded border-2 text-blue-600 accent-blue-600 cursor-pointer"
+                  />
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+      };
+      return <CheckboxPreview variant={variantIndex} />;
+    }
+
+    // Switch variants (3 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'switch') {
+      const SwitchPreview = ({ variant }: { variant: number }) => {
+        const [enabled, setEnabled] = React.useState(false);
+        const [notifications, setNotifications] = React.useState(true);
+        const [withIcon, setWithIcon] = React.useState(false);
+
+        const SwitchBase = ({ on, onChange, showIcon }: { on: boolean; onChange: () => void; showIcon?: boolean }) => (
+          <div
+            onClick={onChange}
+            className={`w-12 h-7 rounded-full relative cursor-pointer transition-colors ${on ? 'bg-blue-600' : 'bg-neutral-300 dark:bg-neutral-600'}`}
+          >
+            <div
+              className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all flex items-center justify-center ${on ? 'right-1' : 'left-1'}`}
+            >
+              {showIcon && (
+                <span className={`text-xs ${on ? 'text-blue-600' : 'text-neutral-400'}`}>
+                  {on ? '✓' : ''}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+
+        if (variant === 0) {
+          // Basic Switch
+          return <SwitchBase on={enabled} onChange={() => setEnabled(!enabled)} />;
+        }
+
+        if (variant === 1) {
+          // Switch with Label
+          return (
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <SwitchBase on={notifications} onChange={() => setNotifications(!notifications)} />
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                {language === 'ko' ? '알림 활성화' : 'Enable notifications'}
+              </span>
+            </label>
+          );
+        }
+
+        // Switch with Icons (variant 2)
+        return <SwitchBase on={withIcon} onChange={() => setWithIcon(!withIcon)} showIcon />;
+      };
+      return <SwitchPreview variant={variantIndex} />;
+    }
+
+    // Card variants
+    if (componentId === 'card') {
+      const variants = [
+        <div key="elevated" className="w-52 p-4 bg-white dark:bg-neutral-700 rounded-xl shadow-md"><p className="font-medium text-neutral-900 dark:text-white text-sm">{t.card?.elevated || 'Elevated Card'}</p><p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t.card?.withShadow || 'With shadow'}</p></div>,
+        <div key="filled" className="w-52 p-4 bg-slate-100 dark:bg-neutral-600 rounded-xl"><p className="font-medium text-neutral-900 dark:text-white text-sm">{t.card?.filled || 'Filled Card'}</p><p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t.card?.tonalSurface || 'Tonal surface'}</p></div>,
+        <div key="outlined" className="w-52 p-4 bg-white dark:bg-neutral-800 rounded-xl border border-slate-300 dark:border-neutral-600"><p className="font-medium text-neutral-900 dark:text-white text-sm">{t.card?.outlined || 'Outlined Card'}</p><p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t.card?.withBorder || 'With border'}</p></div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Chips variants
+    // Chips variants (4 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'chips') {
+      const ChipsPreview = ({ variant }: { variant: number }) => {
+        const [clicked, setClicked] = React.useState(false);
+        const [selected, setSelected] = React.useState(false);
+        const [visible, setVisible] = React.useState(true);
+        const [suggested, setSuggested] = React.useState(false);
+
+        if (variant === 0) {
+          // Assist Chip
+          return (
+            <button
+              onClick={() => { setClicked(true); setTimeout(() => setClicked(false), 1000); }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${clicked ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200' : 'bg-slate-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-600'}`}
+            >
+              <CalendarIcon className="w-4 h-4" />
+              {clicked ? (language === 'ko' ? '알람 설정됨!' : 'Alarm set!') : (language === 'ko' ? '알람 설정' : 'Set alarm')}
+            </button>
+          );
+        }
+
+        if (variant === 1) {
+          // Filter Chip
+          return (
+            <button
+              onClick={() => setSelected(!selected)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${selected ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200' : 'bg-slate-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-600'}`}
+            >
+              {selected && <CheckIcon className="w-4 h-4" />}
+              {language === 'ko' ? '채식주의' : 'Vegetarian'}
+            </button>
+          );
+        }
+
+        if (variant === 2) {
+          // Input Chip
+          if (!visible) {
+            return (
+              <button
+                onClick={() => setVisible(true)}
+                className="px-3 py-1.5 bg-slate-100 dark:bg-neutral-700 rounded-lg text-sm text-neutral-500 hover:bg-slate-200 dark:hover:bg-neutral-600"
+              >
+                + {language === 'ko' ? '다시 추가' : 'Add back'}
+              </button>
+            );
+          }
+          return (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300">
+              John Doe
+              <button
+                onClick={() => setVisible(false)}
+                className="w-4 h-4 flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-full transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          );
+        }
+
+        // Suggestion Chip (variant 3)
+        return (
+          <button
+            onClick={() => { setSuggested(true); setTimeout(() => setSuggested(false), 1500); }}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${suggested ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200' : 'bg-slate-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-600'}`}
+          >
+            {suggested ? (language === 'ko' ? '검색 중...' : 'Searching...') : (language === 'ko' ? '"오늘 날씨" 검색' : 'Try "weather today"')}
+          </button>
+        );
+      };
+      return <ChipsPreview variant={variantIndex} />;
+    }
+
+    // Badge variants
+    if (componentId === 'badge') {
+      const variants = [
+        <div key="dot" className="relative inline-block"><span className="p-2 bg-slate-100 dark:bg-neutral-700 rounded-lg inline-block"><BellIconComponent className="w-6 h-6 text-neutral-600 dark:text-neutral-300" /></span><span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-neutral-800" /></div>,
+        <div key="number" className="relative inline-block"><span className="p-2 bg-slate-100 dark:bg-neutral-700 rounded-lg inline-block"><BellIconComponent className="w-6 h-6 text-neutral-600 dark:text-neutral-300" /></span><span className="absolute -top-2 -right-2 px-1.5 min-w-[20px] h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center">5</span></div>,
+        <div key="max" className="relative inline-block"><span className="p-2 bg-slate-100 dark:bg-neutral-700 rounded-lg inline-block"><BellIconComponent className="w-6 h-6 text-neutral-600 dark:text-neutral-300" /></span><span className="absolute -top-2 -right-3 px-1.5 min-w-[20px] h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center">99+</span></div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Progress Indicators variants
+    if (componentId === 'progress-indicators') {
+      const variants = [
+        <div key="circularInd" className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />,
+        <div key="circularDet" className="relative w-12 h-12"><svg className="w-12 h-12 -rotate-90"><circle cx="24" cy="24" r="20" fill="none" stroke="#dbeafe" strokeWidth="4" /><circle cx="24" cy="24" r="20" fill="none" stroke="#2563eb" strokeWidth="4" strokeDasharray="125" strokeDashoffset="30" strokeLinecap="round" /></svg><span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-blue-600">75%</span></div>,
+        <div key="linearInd" className="w-48 h-1 bg-blue-200 rounded-full overflow-hidden"><div className="h-full bg-blue-600 rounded-full animate-pulse" style={{width: '60%'}} /></div>,
+        <div key="linearDet" className="w-48"><div className="flex justify-between text-xs text-neutral-500 mb-1"><span>Progress</span><span>50%</span></div><div className="h-1 bg-blue-200 rounded-full overflow-hidden"><div className="h-full bg-blue-600 rounded-full" style={{width: '50%'}} /></div></div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Slider variants
+    // Slider variants (3 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'slider') {
+      const SliderPreview = ({ variant }: { variant: number }) => {
+        const [continuous, setContinuous] = React.useState(50);
+        const [discrete, setDiscrete] = React.useState(50);
+        const [rangeStart, setRangeStart] = React.useState(25);
+        const [rangeEnd, setRangeEnd] = React.useState(75);
+
+        if (variant === 0) {
+          // Continuous Slider
+          return (
+            <div className="w-48">
+              <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                <span>{language === 'ko' ? '값' : 'Value'}</span>
+                <span>{continuous}</span>
+              </div>
+              <input
+                type="range"
+                className="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                value={continuous}
+                onChange={(e) => setContinuous(Number(e.target.value))}
+              />
+            </div>
+          );
+        }
+
+        if (variant === 1) {
+          // Discrete Slider
+          return (
+            <div className="w-48 flex flex-col items-center">
+              <div className="flex justify-between w-full text-xs text-neutral-500 mb-1">
+                <span>{language === 'ko' ? '단계' : 'Step'}</span>
+                <span>{discrete}</span>
+              </div>
+              <input
+                type="range"
+                className="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                step={25}
+                value={discrete}
+                onChange={(e) => setDiscrete(Number(e.target.value))}
+              />
+              <div className="flex justify-between w-full text-xs text-neutral-400 mt-1">
+                <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+              </div>
+            </div>
+          );
+        }
+
+        // Range Slider (variant 2)
+        return (
+          <div className="w-48">
+            <div className="flex justify-between text-xs text-neutral-500 mb-1">
+              <span>{language === 'ko' ? '범위' : 'Range'}</span>
+              <span>{rangeStart} - {rangeEnd}</span>
+            </div>
+            <div className="relative h-6 flex items-center">
+              <div className="absolute w-full h-1 bg-blue-200 rounded-lg" />
+              <div
+                className="absolute h-1 bg-blue-600 rounded-lg"
+                style={{ left: `${rangeStart}%`, right: `${100 - rangeEnd}%` }}
+              />
+              <input
+                type="range"
+                className="absolute w-full h-1 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow"
+                value={rangeStart}
+                onChange={(e) => setRangeStart(Math.min(Number(e.target.value), rangeEnd - 10))}
+              />
+              <input
+                type="range"
+                className="absolute w-full h-1 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow"
+                value={rangeEnd}
+                onChange={(e) => setRangeEnd(Math.max(Number(e.target.value), rangeStart + 10))}
+              />
+            </div>
+          </div>
+        );
+      };
+      return <SliderPreview variant={variantIndex} />;
+    }
+
+    // Segmented Buttons variants (2 to match CODE_SNIPPETS)
+    // Segmented Buttons variants (2 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'segmented-buttons') {
+      const SegmentedPreview = ({ variant }: { variant: number }) => {
+        const [singleSelected, setSingleSelected] = React.useState(0);
+        const [multiSelected, setMultiSelected] = React.useState([true, false, true]);
+        const singleOptions = [language === 'ko' ? '일' : 'Day', language === 'ko' ? '주' : 'Week', language === 'ko' ? '월' : 'Month'];
+        const multiOptions = ['S', 'M', 'L'];
+
+        if (variant === 0) {
+          // Single Selection
+          return (
+            <div className="inline-flex rounded-full border border-neutral-300 dark:border-neutral-600 overflow-hidden">
+              {singleOptions.map((option, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSingleSelected(i)}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${i > 0 ? 'border-l border-neutral-300 dark:border-neutral-600' : ''} ${singleSelected === i ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          );
+        }
+
+        // Multi Selection (variant 1)
+        const toggleMulti = (index: number) => {
+          const newSelected = [...multiSelected];
+          newSelected[index] = !newSelected[index];
+          setMultiSelected(newSelected);
+        };
+
+        return (
+          <div className="inline-flex rounded-full border border-neutral-300 dark:border-neutral-600 overflow-hidden">
+            {multiOptions.map((option, i) => (
+              <button
+                key={i}
+                onClick={() => toggleMulti(i)}
+                className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1 ${i > 0 ? 'border-l border-neutral-300 dark:border-neutral-600' : ''} ${multiSelected[i] ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
+              >
+                {multiSelected[i] && <CheckIcon className="w-4 h-4" />}
+                {option}
+              </button>
+            ))}
+          </div>
+        );
+      };
+      return <SegmentedPreview variant={variantIndex} />;
+    }
+
+    // Snackbar variants (3 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'snackbar') {
+      const SnackbarPreview = ({ variant }: { variant: number }) => {
+        const [visible, setVisible] = React.useState(false);
+        const [undone, setUndone] = React.useState(false);
+
+        const showSnackbar = () => {
+          setVisible(true);
+          setUndone(false);
+          setTimeout(() => setVisible(false), 4000);
+        };
+
+        const handleUndo = () => {
+          setUndone(true);
+          setTimeout(() => { setVisible(false); setUndone(false); }, 1000);
+        };
+
+        if (variant === 0) {
+          // Simple Snackbar
+          return (
+            <div className="flex flex-col items-start gap-4">
+              <button
+                onClick={showSnackbar}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {language === 'ko' ? '메시지 보내기' : 'Send Message'}
+              </button>
+              <div className={`px-4 py-3 bg-neutral-800 dark:bg-neutral-700 text-white text-sm rounded-lg shadow-lg transition-all duration-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+                {language === 'ko' ? '메시지가 전송되었습니다' : 'Message sent'}
+              </div>
+            </div>
+          );
+        }
+
+        if (variant === 1) {
+          // Snackbar with Action
+          return (
+            <div className="flex flex-col items-start gap-4">
+              <button
+                onClick={showSnackbar}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {language === 'ko' ? '이메일 보관' : 'Archive Email'}
+              </button>
+              <div className={`px-4 py-3 bg-neutral-800 dark:bg-neutral-700 text-white text-sm rounded-lg shadow-lg flex items-center gap-4 transition-all duration-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+                <span>{undone ? (language === 'ko' ? '실행 취소됨' : 'Undone') : (language === 'ko' ? '이메일이 보관되었습니다' : 'Email archived')}</span>
+                {!undone && (
+                  <button onClick={handleUndo} className="text-blue-400 font-medium hover:text-blue-300">
+                    {language === 'ko' ? '실행 취소' : 'Undo'}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        // Snackbar with Close (variant 2)
+        return (
+          <div className="flex flex-col items-start gap-4">
+            <button
+              onClick={showSnackbar}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              {language === 'ko' ? '항목 삭제' : 'Delete Item'}
+            </button>
+            <div className={`px-4 py-3 bg-neutral-800 dark:bg-neutral-700 text-white text-sm rounded-lg shadow-lg flex items-center gap-3 transition-all duration-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+              <span>{undone ? (language === 'ko' ? '실행 취소됨' : 'Undone') : (language === 'ko' ? '항목이 삭제되었습니다' : 'Item deleted')}</span>
+              {!undone && (
+                <>
+                  <button onClick={handleUndo} className="text-blue-400 font-medium hover:text-blue-300">
+                    {language === 'ko' ? '실행 취소' : 'Undo'}
+                  </button>
+                  <button onClick={() => setVisible(false)} className="text-neutral-400 hover:text-white">✕</button>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      };
+      return <SnackbarPreview variant={variantIndex} />;
+    }
+
+    // Dialog variants (4 to match CODE_SNIPPETS)
+    // Dialog variants (2 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'dialog') {
+      const DialogPreview = ({ variant }: { variant: number }) => {
+        const [open, setOpen] = React.useState(false);
+        const [result, setResult] = React.useState<string | null>(null);
+
+        const handleAction = (action: string) => {
+          setResult(action);
+          setOpen(false);
+          setTimeout(() => setResult(null), 2000);
+        };
+
+        if (variant === 0) {
+          // Basic Dialog
+          return (
+            <div>
+              <button
+                onClick={() => setOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {language === 'ko' ? '다이얼로그 열기' : 'Open Dialog'}
+              </button>
+              {result && (
+                <div className="mt-2 px-3 py-1.5 bg-neutral-800 text-white text-sm rounded-lg inline-block">
+                  {result}
+                </div>
+              )}
+              {open && (
+                <>
+                  <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setOpen(false)} />
+                  <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                    <div className="w-72 bg-white dark:bg-neutral-800 rounded-2xl shadow-xl p-6 animate-in zoom-in-95 duration-200">
+                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+                        {language === 'ko' ? '기본 다이얼로그' : 'Basic Dialog'}
+                      </h3>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                        {language === 'ko' ? '간단한 메시지가 포함된 기본 다이얼로그입니다.' : 'This is a basic dialog with a simple message.'}
+                      </p>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleAction('Cancelled')} className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                          {language === 'ko' ? '취소' : 'Cancel'}
+                        </button>
+                        <button onClick={() => handleAction('Confirmed!')} className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                          {language === 'ko' ? '확인' : 'OK'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        }
+
+        // Alert Dialog (variant 1)
+        return (
+          <div>
+            <button
+              onClick={() => setOpen(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              {language === 'ko' ? '삭제' : 'Delete'}
+            </button>
+            {result && (
+              <div className="mt-2 px-3 py-1.5 bg-neutral-800 text-white text-sm rounded-lg inline-block">
+                {result}
+              </div>
+            )}
+            {open && (
+              <>
+                <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setOpen(false)} />
+                <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                  <div className="w-72 bg-white dark:bg-neutral-800 rounded-2xl shadow-xl p-6 animate-in zoom-in-95 duration-200">
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+                      {language === 'ko' ? '파일을 삭제하시겠습니까?' : 'Delete file?'}
+                    </h3>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                      {language === 'ko' ? '이 작업은 취소할 수 없습니다.' : 'This action cannot be undone.'}
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => handleAction('Cancelled')} className="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors">
+                        {language === 'ko' ? '취소' : 'Cancel'}
+                      </button>
+                      <button onClick={() => handleAction('Deleted!')} className="px-4 py-2 text-sm bg-red-600 text-white rounded-full font-medium hover:bg-red-700 transition-colors">
+                        {language === 'ko' ? '삭제' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      };
+      return <DialogPreview variant={variantIndex} />;
+    }
+
+    // Bottom Sheet variants (5 to match CODE_SNIPPETS)
+    if (componentId === 'sheets-bottom') {
+      const variants = [
+        <div key="standard" className="w-72 bg-white dark:bg-neutral-800 rounded-t-2xl shadow-xl">
+          <div className="flex justify-center pt-3 pb-2"><div className="w-8 h-1 bg-neutral-300 dark:bg-neutral-600 rounded-full" /></div>
+          <div className="p-4 space-y-3">
+            <button className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg flex items-center gap-3"><ShareIcon className="w-5 h-5" />Share</button>
+            <button className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg flex items-center gap-3"><LinkIconComponent className="w-5 h-5" />Get link</button>
+            <button className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg flex items-center gap-3"><EditIcon className="w-5 h-5" />Edit</button>
+          </div>
+        </div>,
+        <div key="modal" className="w-72 bg-white dark:bg-neutral-800 rounded-t-2xl shadow-xl">
+          <div className="flex justify-center pt-3 pb-2"><div className="w-8 h-1 bg-neutral-300 dark:bg-neutral-600 rounded-full" /></div>
+          <div className="px-4 pb-4">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-3">Sort by</h3>
+            <div className="space-y-1">
+              <button className="w-full text-left px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg">Name</button>
+              <button className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 rounded-lg">Date</button>
+              <button className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 rounded-lg">Size</button>
+            </div>
+          </div>
+        </div>,
+        <div key="expanded" className="w-72 bg-white dark:bg-neutral-800 rounded-t-2xl shadow-xl">
+          <div className="flex justify-center pt-3 pb-2"><div className="w-8 h-1 bg-neutral-300 dark:bg-neutral-600 rounded-full" /></div>
+          <div className="px-4 pb-4">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">File Details</h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">document.pdf • 2.4 MB</p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <button className="p-3 bg-slate-100 dark:bg-neutral-700 rounded-xl"><ShareIcon className="w-5 h-5 mx-auto mb-1" /><span className="text-xs">Share</span></button>
+              <button className="p-3 bg-slate-100 dark:bg-neutral-700 rounded-xl"><DownloadIcon className="w-5 h-5 mx-auto mb-1" /><span className="text-xs">Download</span></button>
+              <button className="p-3 bg-slate-100 dark:bg-neutral-700 rounded-xl"><TrashIcon className="w-5 h-5 mx-auto mb-1" /><span className="text-xs">Delete</span></button>
+            </div>
+          </div>
+        </div>,
+        <div key="scrollable" className="w-72 bg-white dark:bg-neutral-800 rounded-t-2xl shadow-xl max-h-48 overflow-hidden">
+          <div className="sticky top-0 bg-white dark:bg-neutral-800 flex justify-center pt-3 pb-2"><div className="w-8 h-1 bg-neutral-300 dark:bg-neutral-600 rounded-full" /></div>
+          <div className="px-4 pb-4 space-y-2">
+            {['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'].map((opt, i) => (
+              <button key={i} className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg">{opt}</button>
+            ))}
+          </div>
+        </div>,
+        <div key="fullscreen" className="w-72 bg-white dark:bg-neutral-800 rounded-t-2xl shadow-xl">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
+            <button className="text-blue-600 dark:text-blue-400 font-medium">Cancel</button>
+            <h3 className="font-semibold text-neutral-900 dark:text-white">Create New</h3>
+            <button className="text-blue-600 dark:text-blue-400 font-medium">Save</button>
+          </div>
+          <div className="p-4">
+            <input className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-transparent" placeholder="Enter name" />
+          </div>
+        </div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Tooltip variants
+    if (componentId === 'tooltip') {
+      const variants = [
+        <div key="plain" className="relative inline-block">
+          <button className="p-2 text-neutral-600 dark:text-neutral-300"><HeartIcon className="w-5 h-5" /></button>
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-neutral-800 dark:bg-neutral-700 text-white text-xs rounded">Favorite</div>
+        </div>,
+        <div key="rich" className="relative inline-block">
+          <button className="p-2 text-neutral-600 dark:text-neutral-300"><InfoIcon className="w-5 h-5" /></button>
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
+            <div className="font-medium mb-1">Rich tooltip</div>
+            <div className="text-neutral-500 dark:text-neutral-400">With additional description</div>
+          </div>
+        </div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Bottom App Bar variants
+    if (componentId === 'bottom-app-bar') {
+      const variants = [
+        <div key="withFab" className="w-80 h-16 bg-slate-100 dark:bg-neutral-800 flex items-center justify-between px-4 rounded-t-xl relative">
+          <div className="flex gap-4">
+            <button className="p-2 text-neutral-600 dark:text-neutral-400"><MenuIconComponent className="w-6 h-6" /></button>
+            <button className="p-2 text-neutral-600 dark:text-neutral-400"><SearchIconComponent className="w-6 h-6" /></button>
+          </div>
+          <div className="absolute right-4 -top-7"><button className="w-14 h-14 bg-blue-600 text-white rounded-2xl shadow-lg flex items-center justify-center"><PlusIcon className="w-6 h-6" /></button></div>
+        </div>,
+        <div key="simple" className="w-80 h-16 bg-slate-100 dark:bg-neutral-800 flex items-center justify-around px-4 rounded-t-xl">
+          <button className="p-2 text-neutral-600 dark:text-neutral-400"><HomeIconComponent className="w-6 h-6" /></button>
+          <button className="p-2 text-neutral-600 dark:text-neutral-400"><SearchIconComponent className="w-6 h-6" /></button>
+          <button className="p-2 text-neutral-600 dark:text-neutral-400"><HeartIcon className="w-6 h-6" /></button>
+          <button className="p-2 text-neutral-600 dark:text-neutral-400"><PersonIcon className="w-6 h-6" /></button>
+        </div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Navigation Bar variants (2 to match CODE_SNIPPETS)
+    if (componentId === 'navigation-bar') {
+      const variants = [
+        <div key="threeItems" className="w-80 h-20 bg-slate-100 dark:bg-neutral-800 flex items-center justify-around rounded-t-xl">
+          <button className="flex flex-col items-center gap-1 px-4 py-2 text-blue-600 dark:text-blue-400">
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-full"><HomeIconComponent className="w-5 h-5" /></div>
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 px-4 py-2 text-neutral-600 dark:text-neutral-400">
+            <SearchIconComponent className="w-6 h-6" />
+            <span className="text-xs">Search</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 px-4 py-2 text-neutral-600 dark:text-neutral-400">
+            <PersonIcon className="w-6 h-6" />
+            <span className="text-xs">Profile</span>
+          </button>
+        </div>,
+        <div key="fourItems" className="w-80 h-20 bg-slate-100 dark:bg-neutral-800 flex items-center justify-around rounded-t-xl">
+          <button className="flex flex-col items-center gap-1 text-blue-600 dark:text-blue-400">
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-full"><HomeIconComponent className="w-5 h-5" /></div>
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 text-neutral-600 dark:text-neutral-400">
+            <HeartIcon className="w-6 h-6" />
+            <span className="text-xs">Favorites</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 text-neutral-600 dark:text-neutral-400">
+            <SearchIconComponent className="w-6 h-6" />
+            <span className="text-xs">Search</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 text-neutral-600 dark:text-neutral-400">
+            <PersonIcon className="w-6 h-6" />
+            <span className="text-xs">Profile</span>
+          </button>
+        </div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Navigation Drawer variants (5 to match CODE_SNIPPETS)
+    if (componentId === 'navigation-drawer') {
+      const variants = [
+        <div key="standard" className="w-64 bg-slate-50 dark:bg-neutral-800 rounded-r-2xl p-4">
+          <h3 className="px-3 text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3">Mail</h3>
+          <div className="space-y-1">
+            <button className="w-full text-left px-3 py-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium flex items-center gap-3"><InboxIcon className="w-5 h-5" />Inbox<span className="ml-auto text-xs">24</span></button>
+            <button className="w-full text-left px-3 py-2.5 text-neutral-700 dark:text-neutral-300 rounded-full text-sm flex items-center gap-3"><SendIcon className="w-5 h-5" />Sent</button>
+            <button className="w-full text-left px-3 py-2.5 text-neutral-700 dark:text-neutral-300 rounded-full text-sm flex items-center gap-3"><TrashIcon className="w-5 h-5" />Trash</button>
+          </div>
+        </div>,
+        <div key="modal" className="w-64 bg-white dark:bg-neutral-800 rounded-r-2xl shadow-xl">
+          <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">U</div>
+              <div><div className="font-medium text-neutral-900 dark:text-white">Username</div><div className="text-xs text-neutral-500">user@email.com</div></div>
+            </div>
+          </div>
+          <div className="p-2">
+            <button className="w-full text-left px-3 py-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">Home</button>
+            <button className="w-full text-left px-3 py-2.5 text-neutral-700 dark:text-neutral-300 rounded-full text-sm">Settings</button>
+          </div>
+        </div>,
+        <div key="withDivider" className="w-64 bg-slate-50 dark:bg-neutral-800 rounded-r-2xl p-4">
+          <h3 className="px-3 text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3">Navigation</h3>
+          <div className="space-y-1">
+            <button className="w-full text-left px-3 py-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium flex items-center gap-3"><HomeIconComponent className="w-5 h-5" />Home</button>
+            <button className="w-full text-left px-3 py-2.5 text-neutral-700 dark:text-neutral-300 rounded-full text-sm flex items-center gap-3"><HeartIcon className="w-5 h-5" />Favorites</button>
+          </div>
+          <div className="border-t border-neutral-200 dark:border-neutral-700 my-3" />
+          <h3 className="px-3 text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3">Labels</h3>
+          <div className="space-y-1">
+            <button className="w-full text-left px-3 py-2.5 text-neutral-700 dark:text-neutral-300 rounded-full text-sm flex items-center gap-3"><FlagIcon className="w-5 h-5 text-red-500" />Important</button>
+          </div>
+        </div>,
+        <div key="withHeader" className="w-64 bg-white dark:bg-neutral-800 rounded-r-2xl shadow-xl overflow-hidden">
+          <div className="h-32 bg-gradient-to-br from-blue-600 to-purple-600 p-4 flex items-end">
+            <div><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-lg mb-2">JD</div><div className="text-white font-medium">John Doe</div></div>
+          </div>
+          <div className="p-2">
+            <button className="w-full text-left px-3 py-2.5 text-neutral-700 dark:text-neutral-300 rounded-full text-sm flex items-center gap-3"><SettingsIcon className="w-5 h-5" />Settings</button>
+          </div>
+        </div>,
+        <div key="rail" className="w-20 bg-slate-50 dark:bg-neutral-800 rounded-r-2xl py-4 flex flex-col items-center gap-2">
+          <button className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl"><HomeIconComponent className="w-6 h-6" /></button>
+          <button className="p-3 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-2xl"><SearchIconComponent className="w-6 h-6" /></button>
+          <button className="p-3 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-2xl"><SettingsIcon className="w-6 h-6" /></button>
+        </div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Tabs variants
+    // Tabs variants (3 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'tabs') {
+      const TabsPreview = ({ variant }: { variant: number }) => {
+        const [activeTab, setActiveTab] = React.useState(0);
+        const tabs = ['Tab 1', 'Tab 2', 'Tab 3'];
+        const tabsWithIcons = [
+          { label: language === 'ko' ? '홈' : 'Home', Icon: HomeIconComponent },
+          { label: language === 'ko' ? '즐겨찾기' : 'Favorites', Icon: HeartIcon },
+          { label: language === 'ko' ? '설정' : 'Settings', Icon: SettingsIcon },
+        ];
+
+        if (variant === 0) {
+          // Primary Tabs
+          return (
+            <div className="w-80">
+              <div className="flex border-b border-neutral-200 dark:border-neutral-700">
+                {tabs.map((tab, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTab(i)}
+                    className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === i ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="p-4 text-sm text-neutral-600 dark:text-neutral-400">
+                {language === 'ko' ? `탭 ${activeTab + 1} 내용` : `Content for ${tabs[activeTab]}`}
+              </div>
+            </div>
+          );
+        }
+
+        if (variant === 1) {
+          // Secondary Tabs (Pill style)
+          return (
+            <div className="w-80">
+              <div className="flex bg-slate-100 dark:bg-neutral-800 rounded-lg p-1">
+                {tabs.map((tab, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTab(i)}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === i ? 'bg-white dark:bg-neutral-600 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="p-4 text-sm text-neutral-600 dark:text-neutral-400">
+                {language === 'ko' ? `탭 ${activeTab + 1} 내용` : `Content for ${tabs[activeTab]}`}
+              </div>
+            </div>
+          );
+        }
+
+        // Tabs with Icons (variant 2)
+        return (
+          <div className="w-80">
+            <div className="flex border-b border-neutral-200 dark:border-neutral-700">
+              {tabsWithIcons.map((tab, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveTab(i)}
+                  className={`flex-1 py-3 text-sm font-medium flex flex-col items-center gap-1 transition-colors ${activeTab === i ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'}`}
+                >
+                  <tab.Icon className="w-5 h-5" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="p-4 text-sm text-neutral-600 dark:text-neutral-400">
+              {language === 'ko' ? `${tabsWithIcons[activeTab].label} 내용` : `Content for ${tabsWithIcons[activeTab].label}`}
+            </div>
+          </div>
+        );
+      };
+      return <TabsPreview variant={variantIndex} />;
+    }
+
+    // Top App Bar variants (6 to match CODE_SNIPPETS)
+    if (componentId === 'top-app-bar') {
+      const variants = [
+        <div key="small" className="w-80 h-14 bg-slate-100 dark:bg-neutral-800 flex items-center px-4 rounded-b-xl">
+          <button className="p-2 text-neutral-600 dark:text-neutral-400 -ml-2"><MenuIconComponent className="w-6 h-6" /></button>
+          <h1 className="flex-1 text-lg font-medium text-neutral-900 dark:text-white ml-2">Title</h1>
+          <button className="p-2 text-neutral-600 dark:text-neutral-400"><SearchIconComponent className="w-6 h-6" /></button>
+        </div>,
+        <div key="center" className="w-80 h-14 bg-slate-100 dark:bg-neutral-800 flex items-center justify-center px-4 rounded-b-xl relative">
+          <button className="absolute left-4 p-2 text-neutral-600 dark:text-neutral-400"><ArrowBackIcon className="w-6 h-6" /></button>
+          <h1 className="text-lg font-medium text-neutral-900 dark:text-white">Title</h1>
+        </div>,
+        <div key="medium" className="w-80 bg-slate-100 dark:bg-neutral-800 rounded-b-xl">
+          <div className="h-14 flex items-center px-4">
+            <button className="p-2 text-neutral-600 dark:text-neutral-400 -ml-2"><ArrowBackIcon className="w-6 h-6" /></button>
+            <div className="flex-1" />
+            <button className="p-2 text-neutral-600 dark:text-neutral-400"><MoreIcon className="w-6 h-6" /></button>
+          </div>
+          <div className="px-4 pb-4"><h1 className="text-2xl font-medium text-neutral-900 dark:text-white">Medium Title</h1></div>
+        </div>,
+        <div key="large" className="w-80 bg-slate-100 dark:bg-neutral-800 rounded-b-xl">
+          <div className="h-14 flex items-center px-4">
+            <button className="p-2 text-neutral-600 dark:text-neutral-400 -ml-2"><ArrowBackIcon className="w-6 h-6" /></button>
+            <div className="flex-1" />
+            <button className="p-2 text-neutral-600 dark:text-neutral-400"><SettingsIcon className="w-6 h-6" /></button>
+          </div>
+          <div className="px-4 pb-6"><h1 className="text-3xl font-medium text-neutral-900 dark:text-white">Large Title</h1></div>
+        </div>,
+        <div key="withSearch" className="w-80 bg-slate-100 dark:bg-neutral-800 rounded-b-xl">
+          <div className="h-14 flex items-center px-4 gap-3">
+            <button className="p-2 text-neutral-600 dark:text-neutral-400 -ml-2"><ArrowBackIcon className="w-6 h-6" /></button>
+            <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-white dark:bg-neutral-700 rounded-full">
+              <SearchIconComponent className="w-5 h-5 text-neutral-500" />
+              <input className="flex-1 bg-transparent text-sm outline-none" placeholder="Search..." />
+            </div>
+          </div>
+        </div>,
+        <div key="withTabs" className="w-80 bg-slate-100 dark:bg-neutral-800 rounded-b-xl">
+          <div className="h-14 flex items-center px-4">
+            <button className="p-2 text-neutral-600 dark:text-neutral-400 -ml-2"><MenuIconComponent className="w-6 h-6" /></button>
+            <h1 className="flex-1 text-lg font-medium text-neutral-900 dark:text-white ml-2">App</h1>
+          </div>
+          <div className="flex border-t border-neutral-200 dark:border-neutral-700">
+            <button className="flex-1 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600">Tab 1</button>
+            <button className="flex-1 py-3 text-sm text-neutral-600 dark:text-neutral-400">Tab 2</button>
+            <button className="flex-1 py-3 text-sm text-neutral-600 dark:text-neutral-400">Tab 3</button>
+          </div>
+        </div>,
+      ];
+      return variants[variantIndex] || variants[0];
+    }
+
+    // Date Pickers variants (2 to match CODE_SNIPPETS)
+    // Date Pickers variants (2 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'date-pickers') {
+      const DatePickerPreview = ({ variant }: { variant: number }) => {
+        const [selectedDate, setSelectedDate] = React.useState(15);
+        const [currentMonth, setCurrentMonth] = React.useState(0); // 0 = January
+        const [currentYear, setCurrentYear] = React.useState(2025);
+
+        const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthsKo = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+        const months = language === 'ko' ? monthsKo : monthsEn;
+        const daysEn = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const daysKo = ['일', '월', '화', '수', '목', '금', '토'];
+        const days = language === 'ko' ? daysKo : daysEn;
+
+        const getDaysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate();
+        const getFirstDayOfMonth = (month: number, year: number) => new Date(year, month, 1).getDay();
+
+        const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+        const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+
+        const handlePrevMonth = () => {
+          if (currentMonth === 0) {
+            setCurrentMonth(11);
+            setCurrentYear(currentYear - 1);
+          } else {
+            setCurrentMonth(currentMonth - 1);
+          }
+          setSelectedDate(1);
+        };
+
+        const handleNextMonth = () => {
+          if (currentMonth === 11) {
+            setCurrentMonth(0);
+            setCurrentYear(currentYear + 1);
+          } else {
+            setCurrentMonth(currentMonth + 1);
+          }
+          setSelectedDate(1);
+        };
+
+        const getDayName = (day: number, month: number, year: number) => {
+          const date = new Date(year, month, day);
+          const dayNames = language === 'ko'
+            ? ['일', '월', '화', '수', '목', '금', '토']
+            : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          return dayNames[date.getDay()];
+        };
+
+        const getFormattedDate = () => {
+          const dayName = getDayName(selectedDate, currentMonth, currentYear);
+          if (language === 'ko') {
+            return `${currentMonth + 1}월 ${selectedDate}일 ${dayName}요일`;
+          }
+          return `${dayName}, ${monthsEn[currentMonth].slice(0, 3)} ${selectedDate}`;
+        };
+
+        if (variant === 0) {
+          // Docked Date Picker
+          return (
+            <div className="w-72 bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={handlePrevMonth}
+                  className="p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
+                >
+                  ◀
+                </button>
+                <span className="font-medium text-neutral-900 dark:text-white">
+                  {language === 'ko' ? `${currentYear}년 ${months[currentMonth]}` : `${months[currentMonth]} ${currentYear}`}
+                </span>
+                <button
+                  onClick={handleNextMonth}
+                  className="p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
+                >
+                  ▶
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                {days.map((d, i) => <div key={i} className="py-1 text-neutral-500 font-medium">{d}</div>)}
+                {[...Array(firstDay)].map((_, i) => <div key={`empty-${i}`} />)}
+                {[...Array(daysInMonth)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDate(i + 1)}
+                    className={`py-1.5 rounded-full transition-colors ${
+                      i + 1 === selectedDate
+                        ? 'bg-blue-600 text-white'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // Modal Date Picker (variant 1)
+        return (
+          <div className="w-72 bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-blue-600 p-4 text-white">
+              <div className="text-sm opacity-80">{language === 'ko' ? '날짜 선택' : 'SELECT DATE'}</div>
+              <div className="text-2xl font-medium mt-1">{getFormattedDate()}</div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={handlePrevMonth}
+                  className="p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
+                >
+                  ◀
+                </button>
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                  {language === 'ko' ? `${currentYear}년 ${months[currentMonth]}` : `${months[currentMonth]} ${currentYear}`}
+                </span>
+                <button
+                  onClick={handleNextMonth}
+                  className="p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
+                >
+                  ▶
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                {days.map((d, i) => <div key={i} className="py-1 text-neutral-500 font-medium">{d}</div>)}
+                {[...Array(firstDay)].map((_, i) => <div key={`empty-${i}`} />)}
+                {[...Array(daysInMonth)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDate(i + 1)}
+                    className={`py-1.5 rounded-full transition-colors ${
+                      i + 1 === selectedDate
+                        ? 'bg-blue-600 text-white'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      };
+      return <DatePickerPreview variant={variantIndex} />;
+    }
+
+    // Menus variants (5 to match CODE_SNIPPETS)
+    // Menus variants (2 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'menus') {
+      const MenusPreview = ({ variant }: { variant: number }) => {
+        const [open, setOpen] = React.useState(false);
+        const [selected, setSelected] = React.useState<string | null>(null);
+
+        const handleItemClick = (action: string) => {
+          setSelected(action);
+          setOpen(false);
+          setTimeout(() => setSelected(null), 1500);
+        };
+
+        if (variant === 0) {
+          // Basic Menu with icons
+          return (
+            <div className="relative">
+              <button
+                onClick={() => setOpen(!open)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                {language === 'ko' ? '메뉴 열기' : 'Open Menu'}
+                <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              {selected && (
+                <div className="absolute top-full mt-2 px-3 py-1.5 bg-neutral-800 text-white text-sm rounded-lg">
+                  {selected}
+                </div>
+              )}
+              {open && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button onClick={() => handleItemClick('Cut')} className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center gap-3">
+                      <CutIcon className="w-4 h-4" />{language === 'ko' ? '잘라내기' : 'Cut'}
+                    </button>
+                    <button onClick={() => handleItemClick('Copy')} className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center gap-3">
+                      <CopyIcon className="w-4 h-4" />{language === 'ko' ? '복사' : 'Copy'}
+                    </button>
+                    <button onClick={() => handleItemClick('Paste')} className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center gap-3">
+                      <PasteIcon className="w-4 h-4" />{language === 'ko' ? '붙여넣기' : 'Paste'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        }
+
+        // Menu with Divider (variant 1)
+        return (
+          <div className="relative">
+            <button
+              onClick={() => setOpen(!open)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              {language === 'ko' ? '설정' : 'Settings'}
+              <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+            {selected && (
+              <div className="absolute top-full mt-2 px-3 py-1.5 bg-neutral-800 text-white text-sm rounded-lg">
+                {selected}
+              </div>
+            )}
+            {open && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button onClick={() => handleItemClick('Profile')} className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                    {language === 'ko' ? '프로필' : 'Profile'}
+                  </button>
+                  <button onClick={() => handleItemClick('Settings')} className="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                    {language === 'ko' ? '설정' : 'Settings'}
+                  </button>
+                  <div className="border-t border-neutral-200 dark:border-neutral-700 my-1" />
+                  <button onClick={() => handleItemClick('Logout')} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    {language === 'ko' ? '로그아웃' : 'Logout'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      };
+      return <MenusPreview variant={variantIndex} />;
+    }
+
+    // Radio Button variants
+    // Radio Button variants (1 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'radio-button') {
+      const RadioPreview = () => {
+        const [selected, setSelected] = React.useState('small');
+        const options = [
+          { value: 'small', label: language === 'ko' ? '소형' : 'Small' },
+          { value: 'medium', label: language === 'ko' ? '중형' : 'Medium' },
+          { value: 'large', label: language === 'ko' ? '대형' : 'Large' },
+        ];
+
+        return (
+          <div role="radiogroup" className="space-y-2">
+            {options.map((option) => (
+              <label
+                key={option.value}
+                className="flex items-center gap-3 cursor-pointer select-none"
+                onClick={() => setSelected(option.value)}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${selected === option.value ? 'border-blue-600' : 'border-neutral-400'}`}>
+                  {selected === option.value && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />}
+                </div>
+                <span className="text-sm text-neutral-700 dark:text-neutral-300">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        );
+      };
+      return <RadioPreview />;
+    }
+
+    // Text Field variants (5 to match CODE_SNIPPETS)
+    // Text Field variants (5 to match CODE_SNIPPETS) - Interactive
+    if (componentId === 'text-field') {
+      const TextFieldPreview = ({ variant }: { variant: number }) => {
+        const [filled, setFilled] = React.useState('');
+        const [outlined, setOutlined] = React.useState('');
+        const [email, setEmail] = React.useState('');
+        const [password, setPassword] = React.useState('abc');
+        const [search, setSearch] = React.useState('');
+
+        if (variant === 0) {
+          // Filled Text Field
+          return (
+            <div className="w-64">
+              <div className={`bg-slate-100 dark:bg-neutral-700 rounded-t-lg px-4 pt-4 pb-2 border-b-2 ${filled ? 'border-blue-600' : 'border-neutral-400'}`}>
+                <label className={`text-xs ${filled ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500'}`}>Label</label>
+                <input
+                  className="w-full bg-transparent text-neutral-900 dark:text-white outline-none"
+                  value={filled}
+                  onChange={(e) => setFilled(e.target.value)}
+                  placeholder={language === 'ko' ? '텍스트 입력' : 'Enter text'}
+                />
+              </div>
+            </div>
+          );
+        }
+
+        if (variant === 1) {
+          // Outlined Text Field
+          return (
+            <div className="w-64">
+              <div className={`relative border-2 rounded-lg px-4 py-3 ${outlined ? 'border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                <label className={`absolute -top-2.5 left-3 px-1 bg-white dark:bg-neutral-900 text-xs ${outlined ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500'}`}>Label</label>
+                <input
+                  className="w-full bg-transparent text-neutral-900 dark:text-white outline-none"
+                  value={outlined}
+                  onChange={(e) => setOutlined(e.target.value)}
+                  placeholder={language === 'ko' ? '텍스트 입력' : 'Enter text'}
+                />
+              </div>
+            </div>
+          );
+        }
+
+        if (variant === 2) {
+          // With Helper
+          return (
+            <div className="w-64">
+              <div className="relative border-2 border-neutral-300 dark:border-neutral-600 rounded-lg px-4 py-3 focus-within:border-blue-600">
+                <label className="absolute -top-2.5 left-3 px-1 bg-white dark:bg-neutral-900 text-xs text-neutral-500 dark:text-neutral-400">Email</label>
+                <input
+                  className="w-full bg-transparent text-neutral-900 dark:text-white outline-none"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={language === 'ko' ? '이메일 입력' : 'Enter email'}
+                />
+              </div>
+              <p className="text-xs text-neutral-500 mt-1 px-4">{language === 'ko' ? '이메일은 공유되지 않습니다' : "We'll never share your email"}</p>
+            </div>
+          );
+        }
+
+        if (variant === 3) {
+          // Error
+          const hasError = password.length > 0 && password.length < 8;
+          return (
+            <div className="w-64">
+              <div className={`bg-slate-100 dark:bg-neutral-700 rounded-t-lg px-4 pt-4 pb-2 border-b-2 ${hasError ? 'border-red-600' : 'border-blue-600'}`}>
+                <label className={`text-xs ${hasError ? 'text-red-600' : 'text-blue-600'}`}>{language === 'ko' ? '비밀번호' : 'Password'}</label>
+                <input
+                  type="password"
+                  className="w-full bg-transparent text-neutral-900 dark:text-white outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {hasError && <p className="text-xs text-red-600 mt-1 px-4">{language === 'ko' ? '8자 이상 입력해주세요' : 'Password must be at least 8 characters'}</p>}
+            </div>
+          );
+        }
+
+        // With Icons (variant 4)
+        return (
+          <div className="w-64">
+            <div className="relative border-2 border-neutral-300 dark:border-neutral-600 rounded-lg px-4 py-3 flex items-center gap-2 focus-within:border-blue-600">
+              <SearchIconComponent className="w-5 h-5 text-neutral-400" />
+              <input
+                className="flex-1 bg-transparent text-neutral-900 dark:text-white outline-none"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={language === 'ko' ? '검색...' : 'Search...'}
+              />
+              {search && (
+                <button
+                  className="text-neutral-400 hover:text-neutral-600 transition-colors"
+                  onClick={() => setSearch('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      };
+      return <TextFieldPreview variant={variantIndex} />;
+    }
+
+    // Default fallback
+    return (
+      <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-600 dark:text-blue-300">
+        {lang === 'ko' ? '미리보기' : 'Preview'} #{variantIndex + 1}
+      </div>
+    );
+  }
+
+  // Bell Icon for Badge
+  function BellIconComponent({ className }: { className?: string }) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      </svg>
+    );
+  }
+
+  function getUsageKey(componentId: string | undefined): string | null {
+    const mapping: Record<string, string> = {
+      'button': 'button',
+      'fab': 'fab',
+      'icon-button': 'iconButton',
+      'segmented-buttons': 'segmentedButton',
+      'badge': 'badge',
+      'progress-indicators': 'progress',
+      'snackbar': 'snackbar',
+      'card': 'card',
+      'dialog': 'dialog',
+      'sheets-bottom': 'bottomSheet',
+      'tooltip': 'tooltip',
+      'bottom-app-bar': 'bottomAppBar',
+      'navigation-bar': 'navigationBar',
+      'navigation-drawer': 'navigationDrawer',
+      'tabs': 'tabs',
+      'top-app-bar': 'topAppBar',
+      'checkbox': 'checkbox',
+      'chips': 'chips',
+      'date-pickers': 'datePicker',
+      'menus': 'menus',
+      'radio-button': 'radioButton',
+      'slider': 'slider',
+      'switch': 'switchComp',
+      'text-field': 'textField',
+    };
+    return componentId ? mapping[componentId] || null : null;
+  }
 };
 
 // ===== SECTION TITLE COMPONENT =====
@@ -1595,5 +3495,25 @@ const TwitterIcon: React.FC = () => (
 const FacebookIcon: React.FC = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
 );
-
+const ListIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+);
+const GridIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+);
+const InfoIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+);
+const HomeIconComponent: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+);
+const SearchIconComponent: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+);
+const MenuIconComponent: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+);
+const LinkIconComponent: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+);
 export default ComponentPage;

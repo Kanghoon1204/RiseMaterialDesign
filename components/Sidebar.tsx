@@ -57,6 +57,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     >
       <div className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
         <nav className="flex flex-col space-y-2 pt-4">
+          {/* Home Link */}
+          <NavLink
+            to="/home"
+            className={({ isActive }) => `
+              flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg
+              transition-colors duration-200
+              ${isActive
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
+                : 'text-neutral-800 dark:text-neutral-200 hover:bg-slate-200 dark:hover:bg-neutral-700'
+              }
+            `}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            {language === 'ko' ? '홈' : 'Home'}
+          </NavLink>
+
+          <div className="border-t border-slate-200 dark:border-neutral-700 my-2" />
+
           {NAV_DATA.map((category) => (
             <div key={category.key}>
               <button
