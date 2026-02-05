@@ -1,0 +1,17 @@
+{
+  "name": "Material Design 3 Components",
+  "short_name": "M3 Design",
+  "description": "Interactive Material Design 3 component showcase and documentation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFBFE",
+  "theme_color": "#6750A4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
